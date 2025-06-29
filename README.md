@@ -1,10 +1,10 @@
-# 🚚 Warehouse API (Package & Truck Assignment)
+#  Warehouse API (Package & Truck Assignment)
 
 This project implements a **warehouse backend system** that assigns packages to trucks based on their volume. It ensures optimal truck utilization and supports deferral when packages cannot be fully assigned.
 
 ---
 
-## 🚀 Features
+##  Features
 
 - Add and manage **trucks** and **packages**
 - **Assign packages** to the most suitable truck (≥80% full by volume)
@@ -14,7 +14,7 @@ This project implements a **warehouse backend system** that assigns packages to 
 
 ---
 
-## 🛠 Technologies Used
+##  Technologies Used
 
 - **Python 3.10+**
 - **Flask** – REST API Framework
@@ -23,7 +23,7 @@ This project implements a **warehouse backend system** that assigns packages to 
 
 ---
 
-## 🗂 Project Structure
+##  Project Structure
 
 ```
 WarehouseAPI/
@@ -41,7 +41,7 @@ WarehouseAPI/
 
 ---
 
-## 🧩 How It Works
+##  How It Works
 
 - You add **trucks** and **packages** via API endpoints
 - When calling `/assign-truck`, you provide package IDs
@@ -88,9 +88,9 @@ No setup required – DB file `warehouse.db` is created automatically. You can l
 
 ---
 
-## 📂 Input & Output
+##  Input & Output
 
-### ➕ Add Truck – `POST /add-truck`
+### + Add Truck – `POST /add-truck`
 ```json
 {
   "length": 5,
@@ -108,7 +108,7 @@ No setup required – DB file `warehouse.db` is created automatically. You can l
 
 ---
 
-### ➕ Add Package – `POST /add-package`
+### + Add Package – `POST /add-package`
 ```json
 {
   "length": 1,
@@ -126,7 +126,7 @@ No setup required – DB file `warehouse.db` is created automatically. You can l
 
 ---
 
-### 📤 Assign Packages – `POST /assign-truck`
+###  Assign Packages – `POST /assign-truck`
 ```json
 {
   "package_ids": ["uuid-1", "uuid-2"]
@@ -153,7 +153,7 @@ No setup required – DB file `warehouse.db` is created automatically. You can l
 
 ---
 
-## 🧪 How to Run (Step-by-Step)
+##  How to Run (Step-by-Step)
 
 1. Start the server:
 ```bash
@@ -169,7 +169,7 @@ curl -X POST http://localhost:5000/add-truck -H "Content-Type: application/json"
 
 ---
 
-## ❗ Crash & Error Handling
+## Crash & Error Handling
 
 | Case                     | Status Code | Message                                |
 |--------------------------|-------------|----------------------------------------|
@@ -179,15 +179,10 @@ curl -X POST http://localhost:5000/add-truck -H "Content-Type: application/json"
 
 ---
 
-## 🧠 Notes
+##  Notes
 
 - Uses `uuid.uuid4()` for unique IDs
 - Volume is computed in Python: `length × width × height`
 - Database logic is modular and can be replaced with MSSQL
 
 ---
-
-## 👤 Author
-
-Built as a backend system design exercise for warehouse logistics.  
-Includes best practices in modular Flask architecture, error handling, and API design.
