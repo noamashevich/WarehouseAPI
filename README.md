@@ -3,6 +3,19 @@
 This project implements a **warehouse backend system** that assigns packages to trucks based on their volume. It ensures optimal truck utilization and supports deferral when packages cannot be fully assigned.
 
 ---
+### Bin Packing Logic (Work Item 3 – Bonus)
+
+To reflect real-world physical constraints, the system implements a **First-Fit Decreasing Bin Packing** heuristic:
+
+- Packages are sorted by volume in descending order.
+- Each package is assigned to the **first truck** that has enough remaining length to accommodate it.
+- The strategy simulates linear space (1D bin packing), where packages are placed sequentially along the truck's length.
+
+#### Trade-offs:
+- This approach simplifies spatial constraints (ignores width/height stacking).
+- It is efficient and fast (`O(n * m)`) and works well under typical warehouse conditions.
+- It avoids overfitting by focusing on a single dimension (length), which balances accuracy and performance.
+---
 
 ##  Features
 
@@ -178,19 +191,6 @@ curl -X POST http://localhost:5000/add-truck -H "Content-Type: application/json"
 | No valid packages        | 404         | `{ "error": "No valid packages" }`     |
 
 ---
-### Bin Packing Logic (Work Item 3 – Bonus)
-
-To reflect real-world physical constraints, the system implements a **First-Fit Decreasing Bin Packing** heuristic:
-
-- Packages are sorted by volume in descending order.
-- Each package is assigned to the **first truck** that has enough remaining length to accommodate it.
-- The strategy simulates linear space (1D bin packing), where packages are placed sequentially along the truck's length.
-
-#### Trade-offs:
-- This approach simplifies spatial constraints (ignores width/height stacking).
-- It is efficient and fast (`O(n * m)`) and works well under typical warehouse conditions.
-- It avoids overfitting by focusing on a single dimension (length), which balances accuracy and performance.
-
 
 ##  Notes
 
