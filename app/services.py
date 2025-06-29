@@ -1,11 +1,13 @@
 import uuid
 from app.db import get_db_connection
 
+# Add Truck
 def add_truck_service(data):
     try:
         length = float(data['length'])
         width = float(data['width'])
         height = float(data['height'])
+
         if length <= 0 or width <= 0 or height <= 0:
             raise ValueError("Dimensions must be positive")
 
@@ -28,11 +30,13 @@ def add_truck_service(data):
         return {"status": 400, "body": {"error": str(e)}}
 
 
+# Add Package
 def add_package_service(data):
     try:
         length = float(data['length'])
         width = float(data['width'])
         height = float(data['height'])
+
         if length <= 0 or width <= 0 or height <= 0:
             raise ValueError("Dimensions must be positive")
 
@@ -55,6 +59,7 @@ def add_package_service(data):
         return {"status": 400, "body": {"error": str(e)}}
 
 
+# Assign Packages to Truck – Bin Packing (First Fit)
 def assign_packages_to_truck_service(package_ids):
     if not package_ids:
         return {"status": 400, "body": {"error": "No package IDs provided"}}
@@ -62,9 +67,10 @@ def assign_packages_to_truck_service(package_ids):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Load packages
     placeholders = ','.join('?' for _ in package_ids)
     cursor.execute(f"""
-        SELECT id, volume FROM Packages
+        SELECT id, length, width, height, volume FROM Packages
         WHERE id IN ({placeholders}) AND assigned_truck_id IS NULL
     """, package_ids)
     packages = cursor.fetchall()
@@ -74,13 +80,14 @@ def assign_packages_to_truck_service(package_ids):
         conn.close()
         return {"status": 404, "body": {"error": "No valid unassigned packages found"}}
 
-    total_volume = sum(row["volume"] for row in packages)
+    # Sort packages by volume descending (First-Fit Decreasing)
+    packages = sorted(packages, key=lambda p: p["volume"], reverse=True)
 
+    # Load available trucks
     cursor.execute("""
-        SELECT id, volume FROM Trucks
+        SELECT id, length, width, height FROM Trucks
         WHERE available = 1
-        ORDER BY ABS(volume - ?)
-    """, (total_volume,))
+    """)
     trucks = cursor.fetchall()
 
     if not trucks:
@@ -88,51 +95,53 @@ def assign_packages_to_truck_service(package_ids):
         conn.close()
         return {"status": 404, "body": {"error": "No available trucks"}}
 
-    assigned_packages = []
-    deferred_packages = []
-    selected_truck = None
+    # Track truck usage (simple 1D along length)
+    truck_usage = {
+        truck["id"]: {
+            "max_length": truck["length"],
+            "used_length": 0,
+            "assigned": []
+        } for truck in trucks
+    }
 
-    for truck in trucks:
-        truck_id, truck_volume = truck["id"], truck["volume"]
-        ratio = total_volume / truck_volume
+    assigned = []
+    deferred = []
 
-        if ratio >= 0.8 or total_volume <= truck_volume:
-            current_volume = 0
-            for pkg in packages:
-                if current_volume + pkg["volume"] <= truck_volume:
-                    cursor.execute("""
-                        UPDATE Packages SET assigned_truck_id = ?
-                        WHERE id = ?
-                    """, (truck_id, pkg["id"]))
-                    assigned_packages.append(pkg["id"])
-                    current_volume += pkg["volume"]
-                else:
-                    deferred_packages.append(pkg["id"])
+    for pkg in packages:
+        pkg_length = pkg["length"]
+        placed = False
 
+        for truck_id, usage in truck_usage.items():
+            if usage["used_length"] + pkg_length <= usage["max_length"]:
+                usage["assigned"].append(pkg["id"])
+                usage["used_length"] += pkg_length
+                assigned.append((pkg["id"], truck_id))
+                placed = True
+                break
+
+        if not placed:
+            deferred.append(pkg["id"])
+
+    # Update DB
+    for pkg_id, truck_id in assigned:
+        cursor.execute("""
+            UPDATE Packages SET assigned_truck_id = ? WHERE id = ?
+        """, (truck_id, pkg_id))
+
+    # Mark trucks as unavailable if anything was assigned
+    for truck_id, usage in truck_usage.items():
+        if usage["assigned"]:
             cursor.execute("UPDATE Trucks SET available = 0 WHERE id = ?", (truck_id,))
-            selected_truck = truck_id
-            break
 
     conn.commit()
     cursor.close()
     conn.close()
 
-    if selected_truck:
-        return {
-            "status": 200,
-            "body": {
-                "status": "assigned",
-                "truck_id": selected_truck,
-                "assigned_packages": assigned_packages,
-                "deferred_packages": deferred_packages
-            }
+    return {
+        "status": 200,
+        "body": {
+            "status": "assigned" if assigned else "deferred",
+            "assigned_packages": [pkg for pkg, _ in assigned],
+            "deferred_packages": deferred
         }
-    else:
-        return {
-            "status": 200,
-            "body": {
-                "status": "deferred",
-                "assigned_packages": [],
-                "deferred_packages": [pkg["id"] for pkg in packages]
-            }
-        }
+    }
